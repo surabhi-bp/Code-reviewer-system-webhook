@@ -117,3 +117,85 @@ def test_github_webhook_null_repository(client):
         "status": "success",
         "message": "Webhook received successfully"
     }
+
+
+def test_github_webhook_pr_synchronize_spawns_thread(client, monkeypatch):
+    from unittest.mock import MagicMock
+    mock_orchestrator_cls = MagicMock()
+    monkeypatch.setattr("app.api.v1.webhooks.ReviewOrchestratorService", mock_orchestrator_cls)
+
+    payload = {
+        "action": "synchronize",
+        "number": 99,
+        "repository": {
+            "full_name": "owner/repo-sync"
+        }
+    }
+    data_bytes = json.dumps(payload).encode("utf-8")
+    sig = hmac.new(b"webhook-test-secret", data_bytes, hashlib.sha256).hexdigest()
+
+    headers = {
+        "X-Hub-Signature-256": f"sha256={sig}",
+        "X-GitHub-Event": "pull_request"
+    }
+    response = client.post(
+        "/api/v1/webhooks/github",
+        headers=headers,
+        data=json.dumps(payload),
+        content_type="application/json"
+    )
+    assert response.status_code == 202
+    assert response.get_json() == {
+        "status": "success",
+        "message": "Webhook received successfully"
+    }
+
+
+def test_github_webhook_pr_unsupported_action_no_thread(client, monkeypatch):
+    from unittest.mock import MagicMock
+    mock_thread_cls = MagicMock()
+    monkeypatch.setattr("app.api.v1.webhooks.threading.Thread", mock_thread_cls)
+
+    payload = {
+        "action": "closed",
+        "number": 42,
+        "repository": {"full_name": "owner/repo"}
+    }
+    data_bytes = json.dumps(payload).encode("utf-8")
+    sig = hmac.new(b"webhook-test-secret", data_bytes, hashlib.sha256).hexdigest()
+
+    headers = {
+        "X-Hub-Signature-256": f"sha256={sig}",
+        "X-GitHub-Event": "pull_request"
+    }
+    response = client.post(
+        "/api/v1/webhooks/github",
+        headers=headers,
+        data=json.dumps(payload),
+        content_type="application/json"
+    )
+    assert response.status_code == 202
+    assert response.get_json() == {
+        "status": "success",
+        "message": "Webhook received successfully"
+    }
+    mock_thread_cls.assert_not_called()
+
+
+def test_run_async_pr_review_invokes_orchestrator(client, monkeypatch):
+    from unittest.mock import MagicMock
+    from app.api.v1.webhooks import _run_async_pr_review
+
+    mock_instance = MagicMock()
+    mock_cls = MagicMock(return_value=mock_instance)
+    monkeypatch.setattr("app.api.v1.webhooks.ReviewOrchestratorService", mock_cls)
+
+    app = client.application
+    payload = {"action": "opened", "number": 1, "repository": {"full_name": "o/r"}}
+
+    _run_async_pr_review(app, "o/r", 1, payload)
+
+    mock_cls.assert_called_once()
+    mock_instance.process_pull_request.assert_called_once_with("o/r", 1, webhook_payload=payload)
+
+
