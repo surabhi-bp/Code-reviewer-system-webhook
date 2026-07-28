@@ -33,7 +33,7 @@ def test_process_pull_request_success(app_ctx):
         {
             "category": "lint",
             "severity": "low",
-            "line_number": 1,
+            "line_number": "1",
             "message": "Use double quotes for consistency"
         }
     ]
@@ -69,6 +69,8 @@ def test_process_pull_request_success(app_ctx):
 
     assert review_run.status == "completed"
     assert review_run.commit_sha == "1234567890abcdef1234567890abcdef12345678"
+    assert review_run.duration_sec is not None
+    assert review_run.duration_sec >= 0.0
 
     org = Organization.query.filter_by(name="my-org").first()
     assert org is not None
@@ -85,11 +87,14 @@ def test_process_pull_request_success(app_ctx):
     issues = ReviewIssue.query.filter_by(review_run_id=review_run.id).all()
     assert len(issues) == 1
     assert issues[0].file_path == "main.py"
+    assert issues[0].line_number == 1
     assert issues[0].category == "lint"
     assert issues[0].severity == "low"
 
     mock_github.fetch_pr_diff.assert_called_once_with("my-org/my-repo", 5)
     mock_github.post_pr_review.assert_called_once()
+    posted_issues = mock_github.post_pr_review.call_args[0][2]
+    assert posted_issues[0]["line_number"] == 1
 
 
 def test_process_pull_request_failure_handling(app_ctx):
@@ -117,6 +122,7 @@ def test_process_pull_request_failure_handling(app_ctx):
     assert review_run is not None
     assert review_run.status == "failed"
     assert "GitHub API down" in review_run.error_message
+    assert review_run.duration_sec is not None
 
 
 def test_process_pull_request_without_payload(app_ctx):
@@ -146,6 +152,8 @@ def test_process_pull_request_without_payload(app_ctx):
 
     org = Organization.query.filter_by(name="demo-owner").first()
     assert org is not None
+    assert org.github_org_id > 0
 
     repo = Repository.query.filter_by(name="demo-repo").first()
     assert repo is not None
+    assert repo.github_repo_id > 0
