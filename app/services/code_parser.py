@@ -3,7 +3,6 @@ Filename: app/services/code_parser.py
 Description: Service for parsing unified git diff content into file-by-file patches.
 """
 
-import re
 from typing import List, Dict
 
 class CodeParserService:
