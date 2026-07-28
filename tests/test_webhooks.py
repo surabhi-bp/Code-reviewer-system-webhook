@@ -71,3 +71,49 @@ def test_github_webhook_pr_event_success(client):
         "status": "success",
         "message": "Webhook received successfully"
     }
+
+def test_github_webhook_missing_payload(client):
+    payload = {}
+    data_bytes = json.dumps(payload).encode("utf-8")
+    sig = hmac.new(b"webhook-test-secret", data_bytes, hashlib.sha256).hexdigest()
+    
+    headers = {
+        "X-Hub-Signature-256": f"sha256={sig}",
+        "X-GitHub-Event": "pull_request"
+    }
+    response = client.post(
+        "/api/v1/webhooks/github",
+        headers=headers,
+        data=json.dumps(payload),
+        content_type="application/json"
+    )
+    assert response.status_code == 400
+    assert response.get_json() == {
+        "status": "error",
+        "message": "Missing payload"
+    }
+
+def test_github_webhook_null_repository(client):
+    payload = {
+        "action": "opened",
+        "number": 42,
+        "repository": None
+    }
+    data_bytes = json.dumps(payload).encode("utf-8")
+    sig = hmac.new(b"webhook-test-secret", data_bytes, hashlib.sha256).hexdigest()
+    
+    headers = {
+        "X-Hub-Signature-256": f"sha256={sig}",
+        "X-GitHub-Event": "pull_request"
+    }
+    response = client.post(
+        "/api/v1/webhooks/github",
+        headers=headers,
+        data=json.dumps(payload),
+        content_type="application/json"
+    )
+    assert response.status_code == 202
+    assert response.get_json() == {
+        "status": "success",
+        "message": "Webhook received successfully"
+    }

@@ -7,13 +7,14 @@ Description:
 Receives, validates, and routes incoming GitHub webhook HTTP POST requests.
 """
 
-from flask import Blueprint, request, jsonify, current_app
+from typing import Tuple
+from flask import Blueprint, request, jsonify, current_app, Response
 from app.utils.security import verify_github_signature
 
 webhooks_bp = Blueprint('webhooks', __name__)
 
 @webhooks_bp.route('/github', methods=['POST'])
-def handle_github_webhook():
+def handle_github_webhook() -> Tuple[Response, int]:
     """Receive and process GitHub Webhook events with signature verification."""
     secret = current_app.config.get("GITHUB_WEBHOOK_SECRET")
     
@@ -42,7 +43,8 @@ def handle_github_webhook():
         
     action = payload.get("action")
     pr_number = payload.get("number")
-    repo_name = payload.get("repository", {}).get("full_name")
+    repository = payload.get("repository") or {}
+    repo_name = repository.get("full_name")
     
     # Return standard accepted response
     return jsonify({
