@@ -5,10 +5,12 @@ from app.services.ai.gemini_provider import GeminiProvider
 
 def test_gemini_provider_init():
     with patch("google.generativeai.configure") as mock_configure, \
+         patch("google.generativeai.GenerativeModel"), \
          patch.dict(os.environ, {"GEMINI_API_KEY": "test-api-key"}):
         provider = GeminiProvider(model_name="gemini-1.5-flash")
-        mock_configure.assert_called_once_with(api_key="test-api-key")
         assert provider.model_name == "gemini-1.5-flash"
+        provider.analyze("test")
+        mock_configure.assert_called_once_with(api_key="test-api-key")
 
 def test_gemini_provider_analyze_success():
     with patch("google.generativeai.configure"), \
