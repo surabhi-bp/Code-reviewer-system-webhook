@@ -81,3 +81,22 @@ def test_ai_engine_parse_failure_returns_empty():
     results = engine.analyze_code("db.py", "patch info here", provider)
     assert results == []
 
+def test_ai_engine_build_prompt_contains_patch_content():
+    engine = AIEngineService()
+    file_path = "app/main.py"
+    patch_content = "+ print('hello world')"
+    prompt = engine._build_prompt(file_path, patch_content)
+    
+    assert patch_content in prompt
+    assert file_path in prompt
+    assert "Senior Staff Engineer" in prompt
+    assert "CORE CHECKS YOU MUST ENFORCE:" in prompt
+    assert "STRICT OUTPUT FORMAT RULES:" in prompt
+
+def test_ai_engine_parse_empty_array_json():
+    provider = MockProvider("```json\n[]\n```")
+    engine = AIEngineService()
+    results = engine.analyze_code("clean.py", "patch info here", provider)
+    assert results == []
+
+

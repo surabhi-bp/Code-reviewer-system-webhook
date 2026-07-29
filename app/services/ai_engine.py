@@ -33,35 +33,55 @@ class AIEngineService:
         return self._parse_response(raw_response)
 
     def _build_prompt(self, file_path: str, patch_content: str) -> str:
-        """Construct the prompt layout instructing the AI provider output structure."""
-        return f"""You are a professional automated code auditor.
-Analyze the following code changes for file '{file_path}'.
+        return f"""You are a strict, highly critical Senior Staff Engineer conducting an uncompromising code review.
+Your job is to thoroughly inspect code patches and flag every bug, defect, language misuse, or security risk.
 
-Check for bugs, security vulnerabilities, lint/style problems, and performance issues.
+File under review: '{file_path}'
 
-Response schema constraints:
-Return your response exclusively as a JSON array of objects wrapped in a markdown ```json and ``` block.
-Each object in the array MUST strictly have these keys:
-- "category": Type of issue ('bug', 'security', 'lint', 'performance')
-- "severity": Severity level ('low', 'medium', 'high', 'critical')
-- "line_number": The specific file line number where the issue occurs
-- "message": A clear explanation of the issue and suggested fix
+CODE PATCH TO REVIEW:
+```diff
+{patch_content}
+```
 
-Example:
+CORE CHECKS YOU MUST ENFORCE:
+
+Language-Specific Syntax & API Errors: Flag syntax errors or invalid function calls for the target language (e.g., using C-style printf("...") in a Python file instead of print(...)).
+
+Security Vulnerabilities: Flag SQL injections, XSS, command injection, path traversal, hardcoded credentials, API keys, or secret tokens.
+
+Bad Architectural Practices & Anti-Patterns: Flag poor error handling, unhandled edge cases, resource leaks, and severe performance degradation.
+
+STRICT OUTPUT FORMAT RULES:
+
+Respond ONLY with a valid JSON array of issue objects wrapped in a markdown ```json ... ``` code block.
+
+DO NOT include any conversational filler, introductory prose, notes, or explanations outside the JSON block.
+
+If NO defects, bugs, or security risks are found, you MUST respond with an empty JSON array: [].
+
+Each object in the array MUST contain exactly these keys:
+
+"category": String ('bug', 'security', 'lint', 'performance')
+
+"severity": String ('low', 'medium', 'high', 'critical')
+
+"line_number": Integer (the line number in the patch/file where the issue occurs)
+
+"message": String (clear explanation of the issue and suggested fix)
+
+EXAMPLE REQUIREMENT:
+If reviewing a Python file with printf("hello"):
+
 ```json
 [
   {{
-    "category": "security",
+    "category": "bug",
     "severity": "high",
-    "line_number": 42,
-    "message": "Prevent SQL injection by parameterized statements."
+    "line_number": 10,
+    "message": "Syntax/API Error: C-style `printf` used in Python. Replace with `print(\"hello\")`."
   }}
 ]
-```
-
-Here are the code changes to analyze:
-{patch_content}
-"""
+```"""
 
     def _parse_response(self, raw_response: str) -> List[Dict]:
         """Extract the JSON block from response markdown wrapper and load it safely."""
