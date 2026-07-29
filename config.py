@@ -21,7 +21,7 @@ class Config:
     GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
     GITHUB_WEBHOOK_SECRET = os.getenv('GITHUB_WEBHOOK_SECRET')
     OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
-    MODEL_NAME = os.getenv('MODEL_NAME', 'codellama:python')
+    MODEL_NAME = os.getenv('MODEL_NAME', 'gemini-1.5-flash')
 
 class DevelopmentConfig(Config):
     """Development environment configuration."""

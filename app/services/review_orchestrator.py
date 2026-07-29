@@ -19,7 +19,7 @@ from app.models import (
 from app.services.github_service import GitHubService
 from app.services.code_parser import CodeParserService
 from app.services.ai_engine import AIEngineService
-from app.services.ai.ollama_provider import OllamaProvider
+from app.services.ai.gemini_provider import GeminiProvider
 
 
 class ReviewOrchestratorService:
@@ -37,7 +37,7 @@ class ReviewOrchestratorService:
         self.github_service = github_service or GitHubService()
         self.code_parser_service = code_parser_service or CodeParserService()
         self.ai_engine_service = ai_engine_service or AIEngineService()
-        self.ai_provider = ai_provider or OllamaProvider()
+        self.ai_provider = ai_provider or GeminiProvider()
 
     def process_pull_request(
         self,
@@ -182,10 +182,10 @@ class ReviewOrchestratorService:
 
             try:
                 model_name = current_app.config.get(
-                    "MODEL_NAME", "codellama:python"
+                    "MODEL_NAME", "gemini-1.5-flash"
                 )
             except Exception:
-                model_name = "codellama:python"
+                model_name = "gemini-1.5-flash"
 
             review_run = ReviewRun(
                 pull_request_id=pr.id,

@@ -157,3 +157,30 @@ def test_process_pull_request_without_payload(app_ctx):
     repo = Repository.query.filter_by(name="demo-repo").first()
     assert repo is not None
     assert repo.github_repo_id > 0
+
+
+def test_review_orchestrator_default_ai_provider_and_model_fallback(app_ctx):
+    from app.services.ai.gemini_provider import GeminiProvider
+
+    mock_github = MagicMock()
+    mock_github.fetch_pr_diff.return_value = ""
+    mock_github.post_pr_review.return_value = {}
+
+    mock_code_parser = MagicMock()
+    mock_code_parser.parse_diff.return_value = []
+    mock_ai_engine = MagicMock()
+
+    orchestrator = ReviewOrchestratorService(
+        github_service=mock_github,
+        code_parser_service=mock_code_parser,
+        ai_engine_service=mock_ai_engine,
+    )
+
+    assert isinstance(orchestrator.ai_provider, GeminiProvider)
+
+    review_run = orchestrator.process_pull_request(
+        repo_name="default-org/default-repo",
+        pr_number=99
+    )
+    assert review_run.model_name == "gemini-1.5-flash"
+
