@@ -43,7 +43,7 @@ class GeminiProvider(AIProvider):
                 return current_app.config.get("MODEL_NAME")
         except Exception:
             pass
-        return os.getenv("MODEL_NAME", "gemini-1.5-flash")
+        return os.getenv("MODEL_NAME", "gemini-2.5-flash")
 
     @property
     def model_name(self) -> str:
@@ -61,17 +61,17 @@ class GeminiProvider(AIProvider):
         """
         api_key = self._get_api_key()
         client = genai.Client(api_key=api_key) if api_key else genai.Client()
-        response = client.models.generate_content(
-            model=self.model_name,
-            contents=prompt,
-        )
 
         try:
-            if response and hasattr(response, "text") and response.text:
-                return response.text
-        except (ValueError, AttributeError):
+            response = client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+            )
+            print(f"\n=== DEBUG: RAW GEMINI RESPONSE ===\n{response.text}\n==================================\n")
+            return response.text if response and hasattr(response, "text") and response.text else ""
+        except Exception as e:
+            print(f"\n=== DEBUG: GEMINI API ERROR ===\n{e}\n===============================\n")
             return ""
-        return ""
 
     def generate(self, prompt: str) -> str:
         """

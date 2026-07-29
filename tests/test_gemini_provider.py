@@ -9,12 +9,12 @@ def test_gemini_provider_init():
          patch.dict(os.environ, {"GEMINI_API_KEY": "test-api-key"}):
         mock_client_instance = MagicMock()
         mock_client_cls.return_value = mock_client_instance
-        provider = GeminiProvider(model_name="gemini-1.5-flash")
-        assert provider.model_name == "gemini-1.5-flash"
+        provider = GeminiProvider(model_name="gemini-2.5-flash")
+        assert provider.model_name == "gemini-2.5-flash"
         provider.analyze("test")
         mock_client_cls.assert_called_once_with(api_key="test-api-key")
         mock_client_instance.models.generate_content.assert_called_once_with(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             contents="test"
         )
 
@@ -34,7 +34,7 @@ def test_gemini_provider_analyze_success():
         assert result == "Generated code review"
         mock_client_cls.assert_called_once_with(api_key="test-api-key")
         mock_client_instance.models.generate_content.assert_called_once_with(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             contents="Test prompt"
         )
 
@@ -68,7 +68,7 @@ def test_gemini_provider_generate_alias():
 
         assert result == "Alias result"
         mock_client_instance.models.generate_content.assert_called_once_with(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             contents="Test prompt"
         )
 

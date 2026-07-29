@@ -182,5 +182,5 @@ def test_review_orchestrator_default_ai_provider_and_model_fallback(app_ctx):
         repo_name="default-org/default-repo",
         pr_number=99
     )
-    assert review_run.model_name == "gemini-1.5-flash"
+    assert review_run.model_name == "gemini-2.5-flash"
 

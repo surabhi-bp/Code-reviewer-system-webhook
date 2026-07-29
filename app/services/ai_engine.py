@@ -24,9 +24,12 @@ class AIEngineService:
             List[Dict]: Parsed list of issues (keys: category, severity, line_number, message).
         """
         prompt = self._build_prompt(file_path, patch_content)
+
+        print(f"\n=== DEBUG: PATCH SENT TO GEMINI ===\n{patch_content}\n===================================\n")
         
         try:
             raw_response = provider.analyze(prompt)
+            print(f"\n=== DEBUG: RAW GEMINI RESPONSE ===\n{raw_response}\n==================================\n")
         except Exception:
             return []
             
@@ -87,30 +90,32 @@ If reviewing a Python file with printf("hello"):
         """Extract the JSON block from response markdown wrapper and load it safely."""
         if not raw_response:
             return []
-            
-        # Try extracting standard ```json ... ``` markdown block
-        json_pattern = re.compile(r"```json\s*(.*?)\s*```", re.DOTALL)
-        match = json_pattern.search(raw_response)
-        
-        json_str = ""
-        if match:
-            json_str = match.group(1).strip()
-        else:
-            # Fallback 1: Simple string partitioning if markdown markers are slightly modified
-            if "```json" in raw_response:
-                try:
-                    json_str = raw_response.split("```json")[1].split("```")[0].strip()
-                except IndexError:
-                    pass
-            # Fallback 2: Use raw response directly
-            if not json_str:
-                json_str = raw_response.strip()
-                
+
+        cleaned_text = raw_response.strip()
+        if cleaned_text.startswith("```json"):
+            cleaned_text = cleaned_text[7:]
+        elif cleaned_text.startswith("```"):
+            cleaned_text = cleaned_text[3:]
+        if cleaned_text.endswith("```"):
+            cleaned_text = cleaned_text[:-3]
+        cleaned_text = cleaned_text.strip()
+
         try:
-            parsed = json.loads(json_str)
+            parsed = json.loads(cleaned_text)
             if isinstance(parsed, list):
                 return parsed
         except json.JSONDecodeError:
             pass
-            
+
+        # Secondary fallback: Extract array [ ... ] via regex if LLM included outer explanation
+        json_pattern = re.compile(r"\[\s*\{.*\}\s*\]", re.DOTALL)
+        match = json_pattern.search(cleaned_text)
+        if match:
+            try:
+                parsed = json.loads(match.group(0).strip())
+                if isinstance(parsed, list):
+                    return parsed
+            except json.JSONDecodeError:
+                pass
+
         return []

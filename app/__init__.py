@@ -32,4 +32,9 @@ def create_app(config_name='development'):
     def health_check():
         return {'status': 'healthy', 'service': 'AI Code Review Assistant'}, 200
         
+    # Ensure database tables exist
+    with app.app_context():
+        from app import models  # noqa: F401
+        db.create_all()
+
     return app

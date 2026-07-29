@@ -182,10 +182,10 @@ class ReviewOrchestratorService:
 
             try:
                 model_name = current_app.config.get(
-                    "MODEL_NAME", "gemini-1.5-flash"
+                    "MODEL_NAME", "gemini-2.5-flash"
                 )
             except Exception:
-                model_name = "gemini-1.5-flash"
+                model_name = "gemini-2.5-flash"
 
             review_run = ReviewRun(
                 pull_request_id=pr.id,
